@@ -26,6 +26,19 @@ the source commits. The site reads the exported guide, reviewed policy body, Cat
 presentation data, and validated assets. The build itself can run with only the bundle
 and this checkout.
 
-CI exports inputs from the exact initial live baseline, PLVS v0.26.0, and uploads a
-reviewable candidate. Production deployment still uses the existing PLVS Pages workflow
-while the new build and the handoff of the immutable Catalogue history are verified.
+CI exports inputs from its pinned PLVS reference and uploads a reviewable candidate.
+
+## Publish
+
+Review the candidate against the live website and wait for successful push CI on its exact SHA.
+Use the shared Pages workflow in PLVS to deploy to the existing domain:
+
+```sh
+gh workflow run deploy-website.yml --repo SounDoer/PLVS --ref main -f ref=v<stable> -f website_ref=<website-sha>
+```
+
+The stable product selection pins both the guide and the homepage downloads. The workflow
+keeps the live Catalogue and privacy revisions for website-only changes by default, checks
+immutable Catalogue history, and records all source commits in the live publication marker.
+See the [PLVS publication guide](https://github.com/SounDoer/PLVS/blob/main/docs/website-and-sharesets.md#website-checks-and-independent-publication)
+for privacy review, version changes, and verification.

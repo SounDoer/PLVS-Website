@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 env:
-  PLVS_EXPORTER_SHA: 1bdc2fd543b6e723dabe6e39708b7b87ae72e2b5
+  PLVS_EXPORTER_SHA: 12f9b53f9de5aed81b3738bb55fde9d8b5e2792a
   PLVS_REFERENCE_SHA: abb4e0c7b95fbf88bb2604f5676deefca6b8a437
 
 jobs:
@@ -47,14 +47,6 @@ jobs:
         run: |
           mkdir -p artifacts
           node plvs-tools/scripts/export-website-inputs.mjs plvs-tools/artifacts/reference artifacts/inputs
-          node --input-type=module <<'NODE'
-          import { readFileSync, writeFileSync } from "node:fs";
-          import { releaseAssetNames } from "./plvs-tools/artifacts/reference/scripts/release-assets.mjs";
-          const path = "artifacts/inputs/manifest.json";
-          const manifest = JSON.parse(readFileSync(path, "utf8"));
-          manifest.releaseAssets ??= releaseAssetNames(manifest.productVersion);
-          writeFileSync(path, JSON.stringify(manifest));
-          NODE
       - run: npm run check -- artifacts/inputs
       - uses: actions/upload-artifact@v7
         with:

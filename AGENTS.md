@@ -9,5 +9,5 @@ from exact source commits. CI uses its pinned reference to make builds reproduci
   previews as immutable.
 - Keep the site renderer independent of PLVS application modules. Add needed product facts to the
   input contract at their source.
-- During the transition use this repository to build candidates. The PLVS production workflow
-  owns the Pages lock and deployment.
+- Publish verified commits through the PLVS production workflow, which owns the Pages lock,
+  domain, and live Catalogue history comparison.
