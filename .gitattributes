@@ -1,0 +1,19 @@
+* text=auto eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.icns binary
+*.woff binary
+*.woff2 binary
+*.wav binary
+*.f32.gz binary
+*.webp binary
+# Preserve upstream notice bytes and whitespace, including generated verbatim collections.
+licenses/upstream/*.txt -text -whitespace
+licenses/rust/** -whitespace
+licenses/COMPONENT-NOTICES.txt -whitespace
+licenses/NATIVE-NOTICES.txt -whitespace
