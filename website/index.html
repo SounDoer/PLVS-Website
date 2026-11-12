@@ -1018,7 +1018,7 @@
           </div>
 
           <div class="platform-grid" id="platform-grid">
-            <!-- Populated by JS after GitHub API fetch -->
+            <!-- Populated from the selected release by the script below -->
           </div>
 
           <section class="subscribe" id="subscribe" aria-label="Newsletter subscription">
@@ -1093,53 +1093,17 @@
     </div>
 
     <script>
-      const REPO = "SounDoer/PLVS";
       const RELEASES_URL = "https://github.com/SounDoer/PLVS/releases";
-      const FALLBACK = "Latest release";
+      const release = /* PLVS_RELEASE */ null;
 
-      function releaseAssetNames(version) {
-        return {
-          windowsInstaller: `PLVS_${version}_x64-setup.exe`,
-          windowsPortable: `PLVS-v${version}-x64-portable.zip`,
-          macosDmg: `PLVS-v${version}-aarch64.dmg`,
-          linuxDeb: `PLVS_${version}_amd64.deb`,
-        };
-      }
-
-      function releaseUrls(tagName, assets) {
-        const version = tagName.replace(/^v/, "");
-        const names = releaseAssetNames(version);
-        const urlFor = (name) => assets.find((asset) => asset.name === name)?.browser_download_url;
-        return {
-          mac: urlFor(names.macosDmg),
-          winInstall: urlFor(names.windowsInstaller),
-          winPortable: urlFor(names.windowsPortable),
-          linux: urlFor(names.linuxDeb),
-        };
-      }
-
-      async function loadRelease() {
-        let version = FALLBACK,
-          urls = {};
-        try {
-          const res = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`);
-          if (res.ok) {
-            const { tag_name, assets } = await res.json();
-            version = tag_name;
-            urls = releaseUrls(tag_name, assets);
-          }
-        } catch (_) {
-          /* use fallback */
-        }
-
+      function loadRelease() {
         const versionLink = document.getElementById("download-version");
-        versionLink.textContent = version;
-        versionLink.href =
-          version === FALLBACK
-            ? RELEASES_URL
-            : `${RELEASES_URL}/tag/${encodeURIComponent(version)}`;
-        renderHeroActions(urls);
-        renderPlatformCards(urls);
+        if (release) {
+          versionLink.textContent = release.tag;
+          versionLink.href = `${RELEASES_URL}/tag/${release.tag}`;
+        }
+        renderHeroActions(release?.urls ?? {});
+        renderPlatformCards(release?.urls ?? {});
       }
 
       function isMacPlatform() {

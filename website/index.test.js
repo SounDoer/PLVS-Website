@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 import { describe, expect, test } from "vitest";
+import { pinHomepageRelease } from "../scripts/build-website.mjs";
 
 /**
  * Behaviour of the website homepage. Marketing copy is deliberately not asserted: it is reviewed
@@ -36,6 +37,25 @@ describe("website homepage downloads", () => {
   test("download links fall back to GitHub Releases instead of inert anchors", () => {
     expect(html).not.toContain("|| '#'");
     expect(html).toContain("https://github.com/SounDoer/PLVS/releases");
+  });
+
+  test("pins downloads to the exported product release without querying latest", () => {
+    const releaseAssets = {
+      windowsInstaller: "windows.exe",
+      windowsPortable: "windows.zip",
+      macosDmg: "mac.dmg",
+      linuxDeb: "linux.deb",
+    };
+    const result = pinHomepageRelease(html, { productVersion: "0.26.0", releaseAssets });
+    expect(result).toContain('"tag":"v0.26.0"');
+    for (const file of Object.values(releaseAssets)) {
+      expect(result).toContain(`/releases/download/v0.26.0/${file}`);
+    }
+    expect(result).not.toContain("/releases/latest");
+    expect(() => pinHomepageRelease(html, {
+      productVersion: "0.26.0",
+      releaseAssets: { ...releaseAssets, linuxDeb: "../other.deb" },
+    })).toThrow(/release asset/);
   });
 });
 

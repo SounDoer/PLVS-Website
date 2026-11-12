@@ -47,6 +47,14 @@ jobs:
         run: |
           mkdir -p artifacts
           node plvs-tools/scripts/export-website-inputs.mjs plvs-tools/artifacts/reference artifacts/inputs
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from "node:fs";
+          import { releaseAssetNames } from "./plvs-tools/artifacts/reference/scripts/release-assets.mjs";
+          const path = "artifacts/inputs/manifest.json";
+          const manifest = JSON.parse(readFileSync(path, "utf8"));
+          manifest.releaseAssets ??= releaseAssetNames(manifest.productVersion);
+          writeFileSync(path, JSON.stringify(manifest));
+          NODE
       - run: npm run check -- artifacts/inputs
       - uses: actions/upload-artifact@v7
         with:

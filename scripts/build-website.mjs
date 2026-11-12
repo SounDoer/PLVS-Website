@@ -64,6 +64,36 @@ async function replaceDirectory(staging, output) {
   if (movedPrevious) await rm(backup, { recursive: true, force: true });
 }
 
+export function pinHomepageRelease(html, { productVersion, releaseAssets }) {
+  if (!/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(productVersion)) {
+    throw new Error("Expected a stable PLVS product version");
+  }
+  const tag = `v${productVersion}`;
+  const keys = {
+    mac: "macosDmg",
+    winInstall: "windowsInstaller",
+    winPortable: "windowsPortable",
+    linux: "linuxDeb",
+  };
+  const urls = Object.fromEntries(
+    Object.entries(keys).map(([platform, key]) => {
+      const name = releaseAssets?.[key];
+      if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(name ?? "")) {
+        throw new Error(`Missing or invalid release asset ${key}`);
+      }
+      return [
+        platform,
+        `https://github.com/SounDoer/PLVS/releases/download/${tag}/${name}`,
+      ];
+    }),
+  );
+  const placeholder = "/* PLVS_RELEASE */ null";
+  if (html.split(placeholder).length !== 2) {
+    throw new Error("Expected exactly one homepage release placeholder");
+  }
+  return html.replace(placeholder, () => JSON.stringify({ tag, urls }));
+}
+
 export async function buildWebsite({
   rootDirectory,
   inputDirectory,
@@ -103,6 +133,11 @@ export async function buildWebsite({
   try {
     await cp(website, staging, { recursive: true });
     await removeSourceOnlyFiles(staging);
+    const homepage = join(staging, "index.html");
+    await writeFile(
+      homepage,
+      pinHomepageRelease(await readFile(homepage, "utf8"), manifest),
+    );
     await mkdir(join(staging, "docs"), { recursive: true });
     await writeFile(
       join(staging, "docs", "index.html"),
