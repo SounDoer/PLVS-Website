@@ -98,6 +98,7 @@ export async function buildWebsite({
   rootDirectory,
   inputDirectory,
   outputDirectory,
+  catalogueReviewDirectory,
 }) {
   const root = resolve(rootDirectory ?? process.cwd());
   const website = resolve(root, "website");
@@ -117,10 +118,17 @@ export async function buildWebsite({
     throw new Error("Expected a version 1 PLVS website input bundle");
   }
   const guideDirectory = join(inputs, "guide");
-  const catalogueDirectory = join(inputs, "catalogue");
+  const review = catalogueReviewDirectory ? resolve(catalogueReviewDirectory) : null;
+  const catalogueManifest = review
+    ? JSON.parse(await readFile(join(review, "manifest.json"), "utf8"))
+    : manifest;
+  if (catalogueManifest.schemaVersion !== 1 || !Array.isArray(catalogueManifest.listings)) {
+    throw new Error("Expected a version 1 Catalogue review bundle");
+  }
+  const catalogueDirectory = join(review ?? inputs, "catalogue");
   const output = assertSafeWebsiteOutput(
     outputDirectory ?? join(root, "artifacts", "website"),
-    [website, inputs],
+    [website, inputs, ...(review ? [review] : [])],
     { repositoryRoot: root, localOutputRoot: join(root, "artifacts") },
   );
   const staging = join(
@@ -133,6 +141,7 @@ export async function buildWebsite({
   try {
     await cp(website, staging, { recursive: true });
     await removeSourceOnlyFiles(staging);
+    await rm(join(staging, "assets", "raw"), { recursive: true, force: true });
     const homepage = join(staging, "index.html");
     await writeFile(
       homepage,
@@ -159,7 +168,7 @@ export async function buildWebsite({
     );
     await buildSharesetsSite({
       catalogueDirectory,
-      manifest,
+      manifest: catalogueManifest,
       outputDirectory: join(staging, "sharesets"),
       siteDirectory: staging,
       websiteDirectory: website,
@@ -175,14 +184,15 @@ export async function buildWebsite({
 }
 
 async function main(args) {
-  if (args.length < 1 || args.length > 2) {
+  if (args.length < 1 || args.length > 3) {
     throw new Error(
-      "Usage: npm run build -- <PLVS-input-directory> [output-directory]",
+      "Usage: npm run build -- <PLVS-input-directory> [output-directory] [Catalogue-review-input-directory]",
     );
   }
   const result = await buildWebsite({
     inputDirectory: args[0],
     outputDirectory: args[1],
+    catalogueReviewDirectory: args[2],
   });
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 }

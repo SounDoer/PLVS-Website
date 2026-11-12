@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { basename, join } from "node:path";
 
 import { Marked } from "marked";
@@ -33,13 +33,21 @@ const slugify = (text) =>
 export function readChapters(guideDirectory) {
   const index = readFileSync(join(guideDirectory, "README.md"), "utf8");
   const section = index.split(/^## Chapters$/m)[1]?.split(/^## /m)[0] ?? "";
-  return [...section.matchAll(/^\d+\. \[([^\]]+)\]\(([^)]+\.md)\)$/gm)].map(
+  const chapters = [...section.matchAll(/^\d+\. \[([^\]]+)\]\(([^)]+\.md)\)$/gm)].map(
     ([, title, file]) => ({
       slug: basename(file, ".md"),
       file,
       title,
     }),
   );
+  const files = readdirSync(guideDirectory).filter(
+    (name) => name.endsWith(".md") && !["README.md", "cli.md"].includes(name),
+  );
+  if (chapters.length !== files.length || files.some((file) =>
+    chapters.filter((chapter) => chapter.file === file).length !== 1)) {
+    throw new Error("The guide index must list every chapter exactly once");
+  }
+  return chapters;
 }
 
 /**
