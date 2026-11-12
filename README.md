@@ -7,9 +7,12 @@ privacy policy, and Sharesets validation and compatibility rules.
 
 ## Build a candidate
 
-Use Node from `.nvmrc` and run `npm ci`. Generate a website input bundle with
-`scripts/export-website-inputs.mjs` in a PLVS checkout. The exporter takes clean checkouts
-at the chosen product, Catalogue, and privacy revisions. For example, from PLVS:
+Use Node from `.nvmrc`. The exporter takes clean checkouts at the chosen product,
+Catalogue, and privacy revisions. Run `npm ci --ignore-scripts` in the PLVS checkout
+that runs the exporter and in the separate stable product checkout. The exporter loads
+validation code and its dependencies from that product checkout.
+
+From the PLVS checkout that runs the exporter:
 
 ```sh
 node scripts/export-website-inputs.mjs <stable-checkout> <new-input-directory>
@@ -18,6 +21,7 @@ node scripts/export-website-inputs.mjs <stable-checkout> <new-input-directory>
 In this repository, run:
 
 ```sh
+npm ci
 npm run check -- <input-directory>
 ```
 
