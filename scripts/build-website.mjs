@@ -152,6 +152,17 @@ export async function buildWebsite({
       join(staging, "docs", "index.html"),
       buildDocsPage({ root, guideDirectory, productSha: manifest.productSha }),
     );
+    const troubleshooting = buildDocsPage({
+      root,
+      guideDirectory,
+      productSha: manifest.productSha,
+      troubleshooting: true,
+    });
+    if (troubleshooting) {
+      const directory = join(staging, "docs", "troubleshooting");
+      await mkdir(directory, { recursive: true });
+      await writeFile(join(directory, "index.html"), troubleshooting);
+    }
     const policyPage = join(staging, "privacy", "index.html");
     const policyTemplate = await readFile(policyPage, "utf8");
     const policyBody = await readFile(join(inputs, "policy.html"), "utf8");

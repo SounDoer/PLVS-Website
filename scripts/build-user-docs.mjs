@@ -13,6 +13,7 @@ import { siteNavigation } from "./site-components.mjs";
  */
 
 const TEMPLATE = join("website", "docs", "template.html");
+const TROUBLESHOOTING_PATH = "/docs/troubleshooting/";
 
 const escapeHtml = (text) =>
   text
@@ -54,52 +55,79 @@ export function readChapters(guideDirectory) {
  * A chapter's `# Title` becomes the section heading and every heading below it moves down one
  * level. Heading ids carry the chapter slug, because chapters share headings such as "Limits".
  */
-export function renderChapter(markdown, slug, chapterSlugs, productSha) {
+export function renderChapter(markdown, slug, chapterSlugs, productSha, standalone = false) {
   const marked = new Marked({
     renderer: {
       heading({ tokens, depth }) {
+        if (standalone && depth === 1) return "";
         const text = this.parser.parseInline(tokens);
         if (depth === 1) return `<h2>${text}</h2>\n`;
-        const level = Math.min(depth + 1, 6);
+        const level = Math.min(depth + (standalone ? 0 : 1), 6);
         return `<h${level} id="${slug}-${slugify(text)}">${text}</h${level}>\n`;
       },
       link({ href, title, tokens }) {
         const text = this.parser.parseInline(tokens);
         const titleAttr = title ? ` title="${escapeHtml(title)}"` : "";
-        return `<a href="${escapeHtml(resolveHref(href, chapterSlugs, productSha))}"${titleAttr}>${text}</a>`;
+        return `<a href="${escapeHtml(resolveHref(href, chapterSlugs, productSha, slug))}"${titleAttr}>${text}</a>`;
       },
     },
   });
   return `<section class="docs-section" id="${slug}">\n${marked.parse(markdown)}</section>`;
 }
 
-function resolveHref(href, chapterSlugs, productSha) {
+function resolveHref(href, chapterSlugs, productSha, slug) {
   const match = /^([^/:#]+)\.md(?:#(.+))?$/.exec(href);
   if (!match) return href;
   const [, name, fragment] = match;
-  if (chapterSlugs.includes(name))
-    return fragment ? `#${name}-${fragment}` : `#${name}`;
+  if (name === "troubleshooting" && chapterSlugs.includes(name)) {
+    return TROUBLESHOOTING_PATH + (fragment ? `#${fragment}` : "");
+  }
+  if (chapterSlugs.includes(name)) {
+    const base = slug === "troubleshooting" ? "/docs/" : "";
+    return base + (fragment ? `#${name}-${fragment}` : `#${name}`);
+  }
   return `https://github.com/SounDoer/PLVS/blob/${productSha}/docs/user/${name}.md${fragment ? `#${fragment}` : ""}`;
 }
 
-export function buildDocsPage({ root, guideDirectory, productSha }) {
+export function buildDocsPage({ root, guideDirectory, productSha, troubleshooting = false }) {
   const chapters = readChapters(guideDirectory);
   const slugs = chapters.map((chapter) => chapter.slug);
+  if (troubleshooting && !slugs.includes("troubleshooting")) return null;
   const sidebar = chapters
-    .map(({ slug, title }) => `<a href="#${slug}">${escapeHtml(title)}</a>`)
+    .map(({ slug, title }) => {
+      if (slug === "troubleshooting") {
+        const active = troubleshooting ? ' class="active" aria-current="page"' : "";
+        return `<a href="${TROUBLESHOOTING_PATH}"${active}>${escapeHtml(title)}</a>`;
+      }
+      return `<a href="${troubleshooting ? "/docs/" : ""}#${slug}">${escapeHtml(title)}</a>`;
+    })
     .join("\n        ");
   const content = chapters
+    .filter(({ slug }) => (slug === "troubleshooting") === troubleshooting)
     .map(({ slug, file }) =>
       renderChapter(
         readFileSync(join(guideDirectory, file), "utf8"),
         slug,
         slugs,
         productSha,
+        troubleshooting,
       ),
     )
     .join("\n");
   const template = readFileSync(join(root, TEMPLATE), "utf8");
-  return template
+  return (troubleshooting
+    ? template
+        .replace("<title>PLVS Docs</title>", "<title>PLVS Troubleshooting</title>")
+        .replace(
+          "How to use PLVS: signal sources, meter panels, workspace, and settings.",
+          "Fix common PLVS audio capture and measurement issues.",
+        )
+        .replace("<h1>Docs</h1>", "<h1>Troubleshooting</h1>")
+        .replace(
+          "Get started with PLVS and explore its sources, meters, and workspace.",
+          "Find steps for the message shown in Status.",
+        )
+    : template)
     .replace(
       "<!-- SITE_NAVIGATION -->",
       siteNavigation("docs").replace(

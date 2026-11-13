@@ -111,7 +111,7 @@ h4 {
   margin: var(--space-5) 0 var(--space-2);
   font-size: var(--text-body);
 }
-.docs-section :is(h3, h4, h5, h6) {
+.docs-section :is(h2, h3, h4, h5, h6, span[id]) {
   scroll-margin-top: var(--space-5);
 }
 .docs-section p,
